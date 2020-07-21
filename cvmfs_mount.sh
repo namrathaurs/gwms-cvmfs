@@ -109,14 +109,14 @@ log_system_info () {
 function mount_cvmfs_repos {
 	echo "Hello World from inside cvmfsexec"
 	
-	cvmfsexec/cvmfsexec/mountrepo $CVMFS_CONFIG_REPO
+	cvmfsexec/mountrepo $CVMFS_CONFIG_REPO
 	declare -a cvmfs_repos
 	repos=($(echo $CVMFS_REPOS | tr ":" "\n"))
 	#echo ${repos[@]}       
 	
 	for repo in "${repos[@]}"
 	do
-		cvmfsexec/cvmfsexec/mountrepo $repo
+		cvmfsexec/mountrepo $repo
 	done
 
 }
