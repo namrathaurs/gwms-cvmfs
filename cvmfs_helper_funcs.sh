@@ -4,12 +4,11 @@
 #
 # 
 # Description:
-#	This script performs system checks on the worker node to collect system information and detects if 
-#	CVMFS has been already installed/mounted. If CVMFS does not exist, the script further determines
-#	the reliable option to mount CVMFS repositories on the worker node filesystem and mounts the 
-#	corresponding repositories to make CVMFS available on the worker node.
+#	This script contains helper functions that support the mount/unmount of CVMFS on worker nodes.
 #
 #
+# Used by:
+#	cvmfs_mount.sh, cvmfs_unmount.sh
 #
 # Author:
 #	Namratha Urs
