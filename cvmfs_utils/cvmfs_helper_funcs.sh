@@ -29,37 +29,37 @@ perform_system_check () {
 	# perform required system checks (OS variant, kernel version, unprivileged userns, and others) and store the results in variables for later use
 	
 	if [ -f '/etc/redhat-release' ]; then
-		OS_DISTRO="rhel"
+		GWMS_OS_DISTRO="rhel"
 	else
-		OS_DISTRO="non-rhel"
+		GWMS_OS_DISTRO="non-rhel"
 	fi
 	
-	OS_VARIANT="$(lsb_release -r | awk -F'\t' '{print $2}')"
-	KRNL_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " `
-	KRNL_VER=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $1}'`
-	KRNL_MAJOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $2}'`
-	KRNL_MINOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $3}'`
-	KRNL_PATCH_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 2 -d " "`
+	GWMS_OS_VARIANT="$(lsb_release -r | awk -F'\t' '{print $2}')"
+	GWMS_OS_KRNL_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " `
+	GWMS_OS_KRNL_VER=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $1}'`
+	GWMS_OS_KRNL_MAJOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $2}'`
+	GWMS_OS_KRNL_MINOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $3}'`
+	GWMS_OS_KRNL_PATCH_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 2 -d " "`
 	
 	df -h | grep /cvmfs &>/dev/null 
-	IS_CVMFS_MNT=$?
+	GWMS_IS_CVMFS_MNT=$?
 	
 	unshare -U true &>/dev/null
-	IS_UNPRIV_USERNS_1=$?
+	GWMS_IS_UNPRIV_USERNS_1=$?
 	#echo "IS_UNPRIV_USERNS1: $IS_UNPRIV_USERNS_1"
 	
 	sysctl user.max_user_namespaces &>/dev/null
-	IS_UNPRIV_USERNS_2=$?
+	GWMS_IS_UNPRIV_USERNS_2=$?
 	#echo "IS_UNPRIV_USERNS2: $IS_UNPRIV_USERNS_2"
 	
 	fusermount -V &>/dev/null
-	IS_FUSERMOUNT=$?
+	GWMS_IS_FUSERMOUNT=$?
 
 	yum list installed *fuse* &>/dev/null
-	IS_FUSE_INSTALLED=$?
+	GWMS_IS_FUSE_INSTALLED=$?
 
 	getent group fuse | grep $USER &>/dev/null
-	IS_USR_IN_FUSE_GRP=$?
+	GWMS_IS_USR_IN_FUSE_GRP=$?
 	
 }
 
