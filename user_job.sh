@@ -1,7 +1,7 @@
 #!/bin/bash
-echo "Executing user job..."
+echo  "Executing user job..."
 /bin/hostname
 echo ""
-df -h
-
 echo $cvmfs_utils_dir
+echo ""
+ls -l $cvmfs_utils_dir/.cvmfsexec/dist/cvmfs/singularity.opensciencegrid.org

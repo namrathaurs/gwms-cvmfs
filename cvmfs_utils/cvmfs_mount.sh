@@ -33,14 +33,16 @@ entry_id=$2
 #exec &> $LOGFILE
 
 # source the script containing helper functions before executing this script
-source cvmfs_helper_funcs.sh
+#source cvmfs_helper_funcs.sh
 
 ########################################################################################################
 # This is the start of the main program...
 ########################################################################################################
+variables_reset
+
 perform_system_check
 
-loginfo "Start log for mounting CVMFS"
+#loginfo "Start log for mounting CVMFS"
 
 log_all_system_info
 
@@ -54,22 +56,23 @@ GLIDEIN_CVMFS_REPOS=config-osg.opensciencegrid.org:singularity.opensciencegrid.o
 if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
 	# do nothing (if CVMFS is installed)
 	loginfo "CVMFS is installed on the worker node and available for use"
-	exit 0
+	#exit 0
 else
 	# if not, install CVMFS via mountrepo or cvmfsexec
 	loginfo "CVMFS is NOT installed on the worker node! Installing now..."
 	# check the operating system distro
-	if [[ $GWMS_OS_DISTRO = "rhel" ]]; then
+	if [[ $GWMS_OS_DISTRO = RHEL ]]; then
 		# evaluate the worker node's system configurations to decide whether CVMFS can be mounted or not
-		evaluate_worker_node_config
+		loginfo "Evaluating the worker node..."
+		print_os_info
 		
+		evaluate_worker_node_config		
 		# depending on the previously caught exit status, perform next steps accordingly
 		if [[ $? -eq 0 ]]; then
 			loginfo "Mounting CVMFS repositories..."
 			mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS
-			loginfo "CVMFS repositories mounted"
+			#loginfo "CVMFS repositories mounted"
 		else
-			loginfo "Cannot mount CVMFS repositories!"
 			exit 1
 		fi	
 	else	# GWMS_OS_DISTRO = "non-rhel" (any non-rhel OS)
@@ -80,15 +83,7 @@ else
 
 fi
 
-#df -h | grep /cvmfs &> /dev/null
-#if [[ $? -eq 0 ]]; then
-	# mimicking the behavior of the glidein on the worker node (start the user job once the CVMFS repositories are mounted)
-#	. user_job.sh
-#else
-#	echo -e "Error occured during mount of CVMFS repositories\n"
-#fi
-
-loginfo "End log for mounting CVMFS"
+#loginfo "End log for mounting CVMFS"
 
 ########################################################################################################
 # This is the end of the main program.

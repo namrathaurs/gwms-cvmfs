@@ -55,7 +55,7 @@ logwarn(){
 }
 
 logerror() {
-    echo "$0 ERROR: $1" >&2
+	echo -e "$(hostname -s) $(date +%m-%d-%Y\ %T\ %Z) \t ERROR: $1" >&2
 }
 
 
@@ -115,34 +115,28 @@ perform_system_check() {
 	GWMS_OS_KRNL_PATCH_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 2 -d " "`
 	
 	df -h | grep /cvmfs &>/dev/null
-	#IS_CVMFS_MNT=$?
-	#GWMS_IS_CVMFS_MNT=$(check_exit_status $IS_CVMFS_MNT)
 	GWMS_IS_CVMFS_MNT=$?
+	res_cvmfs_mnt=$(check_exit_status $GWMS_IS_CVMFS_MNT)
 	
 	sysctl user.max_user_namespaces &>/dev/null
-	#IS_UNPRIV_USERNS_SUPPORTED=$?
-	#GWMS_IS_UNPRIV_USERNS_SUPPORTED=$(check_exit_status $IS_UNPRIV_USERNS_SUPPORTED)
 	GWMS_IS_UNPRIV_USERNS_SUPPORTED=$?
+	res_unpriv_userns_supported=$(check_exit_status $GWMS_IS_UNPRIV_USERNS_SUPPORTED)
 	
 	unshare -U true &>/dev/null
-	#IS_UNPRIV_USERNS_ENABLED=$?
-	#GWMS_IS_UNPRIV_USERNS_ENABLED=$(check_exit_status $IS_UNPRIV_USERNS_ENABLED)
 	GWMS_IS_UNPRIV_USERNS_ENABLED=$?
+	res_unpriv_userns_enabled=$(check_exit_status $GWMS_IS_UNPRIV_USERNS_ENABLED)
 	
 	yum list installed *fuse* &>/dev/null
-	#IS_FUSE_INSTALLED=$?
-	#GWMS_IS_FUSE_INSTALLED=$(check_exit_status $IS_FUSE_INSTALLED)
 	GWMS_IS_FUSE_INSTALLED=$?
+	res_fuse_installed=$(check_exit_status $GWMS_IS_FUSE_INSTALLED)
 
 	fusermount -V &>/dev/null
-        #IS_FUSERMOUNT=$?
-        #GWMS_IS_FUSERMOUNT=$(check_exit_status $IS_FUSERMOUNT)
         GWMS_IS_FUSERMOUNT=$?
+        res_fusermount=$(check_exit_status $GWMS_IS_FUSERMOUNT)
 
 	getent group fuse | grep $USER &>/dev/null
-	#IS_USR_IN_FUSE_GRP=$?
-	#GWMS_IS_USR_IN_FUSE_GRP=$(check_exit_status $IS_USR_IN_FUSE_GRP)
 	GWMS_IS_USR_IN_FUSE_GRP=$?
+	res_usr_in_fuse_grp=$(check_exit_status $GWMS_IS_USR_IN_FUSE_GRP)
 	
 	# set the variable indicating this function has been run
 	GWMS_SYSTEM_CHECK=yes
@@ -159,7 +153,8 @@ log_all_system_info () {
 	# logs all required system information stored in variables (print to stderr) for easy debugging
 	# collecting information about the nodes can be useful for troubleshooting and gathering stats about what is out there
 	
-	loginfo "Logging system information..."	
+	loginfo "..."
+	loginfo "Worker node details: "	
 	loginfo "Operating system distro: $GWMS_OS_DISTRO"
 	loginfo "Operating System version: $GWMS_OS_VARIANT"
 	loginfo "Kernel version: $GWMS_OS_KRNL_VER"
@@ -167,12 +162,13 @@ log_all_system_info () {
 	loginfo "Kernel minor revision: $GWMS_OS_KRNL_MINOR_REV"
 	loginfo "Kernel patch number: $GWMS_OS_KRNL_PATCH_NUM"
 	
-	loginfo "CVMFS installed: $GWMS_IS_CVMFS_MNT"
-	loginfo "Unprivileged user namespaces supported: $GWMS_IS_UNPRIV_USERNS_SUPPORTED"
-	loginfo "Unprivileged user namespaces enabled: $GWMS_IS_UNPRIV_USERNS_ENABLED"
-	loginfo "fusermount available: $GWMS_IS_FUSERMOUNT"
-	loginfo "FUSE installed: $GWMS_IS_FUSE_INSTALLED"
-	loginfo "Is the user in 'fuse' group: $GWMS_IS_USR_IN_FUSE_GRP"
+	loginfo "CVMFS installed: $res_cvmfs_mnt"
+	loginfo "Unprivileged user namespaces supported: $res_unpriv_userns_supported"
+	loginfo "Unprivileged user namespaces enabled: $res_unpriv_userns_enabled"
+	loginfo "FUSE installed: $res_fuse_installed"
+	loginfo "fusermount available: $res_fusermount"
+	loginfo "Is the user in 'fuse' group: $res_usr_in_fuse_grp"
+	loginfo "..."
 }
 
 
@@ -262,12 +258,13 @@ has_fuse() {
 	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
 
 	# check what specific configuration of unprivileged user namespaces exists in the system (worker node)
-	#GWMS_UNPRIV_USERNS_CONFIG=$(has_unpriv_userns)
+	unpriv_userns_config=$(has_unpriv_userns)
 
+	#GWMS_IS_FUSERMOUNT=1
 	# determine if mountrepo/umountrepo could be used by checking availability of fuse, fusermount and user being in fuse group...
 	if [[ "${GWMS_IS_FUSE_INSTALLED}" -eq 0 ]]; then
 		# fuse is installed
-		if [[ $(has_unpriv_userns) == unavailable ]]; then
+		if [[ $unpriv_userns_config == unavailable ]]; then
 			# unprivileged user namespaces unsupported, i.e. kernels 2.x (scenarios 5b,6b)
 			if [[ "${GWMS_IS_USR_IN_FUSE_GRP}" -eq 0 ]]; then
 				# user is in fuse group -> fusermount is available (scenario 6b)
@@ -294,7 +291,7 @@ has_fuse() {
 		# fuse is not installed 
 		if [[ "${GWMS_IS_FUSERMOUNT}" -eq 0 ]]; then
 			# fusermount is somehow available and user is/is not in fuse group (scenarios 3,4)
-			logwarn "Inconsistent system configuration: fusermount is only available with fuse or when user belongs to the fuse group"
+			logwarn "Inconsistent system configuration: fusermount is only available with fuse and/or when user belongs to the fuse group"
 			echo error
 		else
 			# fusermount is not available and user is/is not in fuse group (scenarios case 1,2)
@@ -314,20 +311,20 @@ evaluate_worker_node_config () {
 
 	# only use has_unpriv_userns and has_fuse (user group too) for deterimning what option is possible to be used.
 	# keep the kernel and OS info only for logging; understand the correlataion with the result of these methods to see if the tabulated association is accurate
-	
+	fuse_config_status=$(has_fuse)	
 
 	# check fuse related configurations in the system (worker node)
-	if [[ $(has_fuse) == yes ]]; then
+	if [[ $fuse_config_status == yes ]]; then
 		# success;
 		loginfo "CVMFS can be mounted and unmounted on the worker node using mountrepo/umountrepo utility"
 		true
-	elif [[ $(has_fuse) == no ]]; then
+	elif [[ $fuse_config_status == no ]]; then
 		# failure;
 		loginfo "CVMFS cannot be mounted on the worker node using mountrepo utility"
 		false
-	elif [[ $(has_fuse) == error ]]; then
+	elif [[ $fuse_config_status == error ]]; then
 		# inconsistent system configurations detected in the worker node
-		logwarn "Worker node does not meet the necessary requirements to mount CVMFS"
+		logerror "Worker node does not satisfy requirements for using mountrepo utility"
 		exit 1
 	fi
 		
