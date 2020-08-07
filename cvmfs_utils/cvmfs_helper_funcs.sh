@@ -256,24 +256,40 @@ has_fuse() {
 
 	# make sure that perform_system_check has run
 	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
+	
+	#GWMS_IS_FUSERMOUNT=0
+	#res_is_fusermount=$(check_exit_status $GWMS_IS_FUSERMOUNT)
+	#loginfo "fusermount available: $res_is_fusermount"
 
 	# check what specific configuration of unprivileged user namespaces exists in the system (worker node)
 	unpriv_userns_config=$(has_unpriv_userns)
-
-	#GWMS_IS_FUSERMOUNT=1
+	
+	# exit from the script if unprivileged namespaces are not supported but enabled in the kernel
+	if [[ "${unpriv_userns_config}" == error ]]; then
+		exit 1
 	# determine if mountrepo/umountrepo could be used by checking availability of fuse, fusermount and user being in fuse group...
-	if [[ "${GWMS_IS_FUSE_INSTALLED}" -eq 0 ]]; then
+	elif [[ "${GWMS_IS_FUSE_INSTALLED}" -eq 0 ]]; then
 		# fuse is installed
 		if [[ $unpriv_userns_config == unavailable ]]; then
 			# unprivileged user namespaces unsupported, i.e. kernels 2.x (scenarios 5b,6b)
 			if [[ "${GWMS_IS_USR_IN_FUSE_GRP}" -eq 0 ]]; then
 				# user is in fuse group -> fusermount is available (scenario 6b)
-				loginfo "FUSE requirements met by the worker node"
-				echo yes
-			else
-				# user is not in fuse group -> fusermount is unavailable (scenario 5b)
-				loginfo "FUSE requirements not satisfied: user is not in fuse group"
-				echo no
+                                if [[ "${GWMS_IS_FUSERMOUNT}" -ne 0 ]]; then
+                                        logwarn "Inconsistent system configuration: fusermount is available with fuse installed and when user is in fuse group"
+                                        echo error
+                                else
+                                        loginfo "FUSE requirements met by the worker node"
+                                        echo yes
+                                fi
+                        else
+                                # user is not in fuse group -> fusermount is unavailable (scenario 5b)
+                                if [[ "${GWMS_IS_FUSERMOUNT}" -eq 0 ]]; then
+                                        logwarn "Inconsistent system configuration: fusermount is unavailable with fuse installed but when user is not in fuse group"
+                                        echo error
+                                else
+                                        loginfo "FUSE requirements not satisfied: user is not in fuse group"
+                                        echo no
+                                fi				
 			fi
 		else
 			# unprivileged user namespaces is either enabled or disabled
