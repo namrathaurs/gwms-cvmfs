@@ -33,7 +33,7 @@ if [[ $GWMS_IS_CVMFS -eq 0 ]]; then
 	# CVMFS is now available on the worker node"
         # mimicking the behavior of the glidein on the worker node (start the user job once the CVMFS repositories are mounted)
 	loginfo "Starting user job..."
-#        . user_job.sh
+        . user_job.sh
 else
         logerror "CVMFS is still unavailable on the worker node"
 	#Error occured during mount of CVMFS repositories"
@@ -41,7 +41,7 @@ else
 fi
 
 
-#. $cvmfs_utils_dir/cvmfs_unmount.sh
+. $cvmfs_utils_dir/cvmfs_unmount.sh
 
 ###################################################################################################################################################
 

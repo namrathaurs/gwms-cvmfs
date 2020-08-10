@@ -217,7 +217,7 @@ mount_cvmfs_repos () {
         # RETURN(S): Mounts the defined repositories on the worker node filesystem
 
 	# mounting the configuration repo (pre-requisite)
-	#$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
+	$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
 	#.cvmfsexec/mountrepo $1
 	
 	# using an array to unpack the names of additional CVMFS repositories
@@ -227,11 +227,11 @@ mount_cvmfs_repos () {
 	#echo ${repos[@]}       
 	
 	# mount every repository that was previously unpacked
-	#for repo in "${repos[@]}"
-	#do
-	#	$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
+	for repo in "${repos[@]}"
+	do
+		$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
 	#	.cvmfsexec/mountrepo $repo
-	#done
+	done
 
 	# see if all the repositories got mounted
 	num_repos_mntd=`df -h | grep /cvmfs | wc -l`
@@ -388,12 +388,12 @@ evaluate_worker_node_config () {
 		true
 	elif [[ $fuse_config_status == no ]]; then
 		# failure;
-		loginfo "CVMFS cannot be mounted on the worker node using mountrepo utility"
+		logerror "CVMFS cannot be mounted on the worker node using mountrepo utility"
 		false
 	elif [[ $fuse_config_status == error ]]; then
 		# inconsistent system configurations detected in the worker node
 		logerror "Worker node does not satisfy requirements for using mountrepo utility"
-		exit 1
+		false	
 	fi
 		
 }	
