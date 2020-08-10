@@ -21,11 +21,6 @@
 #
 
 
-
-# name of the glidein configuration file and entry id
-glidein_config=$1
-entry_id=$2
-
 # to implement custom logging
 # https://stackoverflow.com/questions/42403558/how-do-i-manage-log-verbosity-inside-a-shell-script
 # WORKAROUND: redirect stdout and stderr to some file 
@@ -33,35 +28,39 @@ entry_id=$2
 #exec &> $LOGFILE
 
 
-# source the script containing helper functions before executing this script
-source cvmfs_helper_funcs.sh
-
 ########################################################################################################
-# This is the start of the main program.
+# Start: main program
 ########################################################################################################
 
-log_marker "START" "UNMOUNTING"
+loginfo "..."
+loginfo  "Start log for unmounting CVMFS"
 
+# check if CVMFS has been mounted on the worker node
 df -h | grep /cvmfs &> /dev/null
-IS_CVMFS_MOUNT=$?
 
-if [[ $IS_CVMFS_MOUNT -eq 0 ]]; then
-	echo "Unmounting CVMFS..."
-	$CVMFSEXEC_HOME/.cvmfsexec/umountrepo -a
+if [[ $? -eq 0 ]]; then
+	# CVMFS mount points exist in the filesystem
+	loginfo "Unmounting CVMFS..."
+	$cvmfs_utils_dir/.cvmfsexec/umountrepo -a
 	
-	echo -e "CVMFS repositories unmounted\n"
-	#prep_cvmfs_env "UNMOUNT"
+	# check again to ensure all CVMFS repositories were unmounted by umountrepo
+	df -h | grep /cvmfs &> /dev/null && logerror "One or more CVMFS repositories might not be completely unmounted" || loginfo "CVMFS repositories unmounted"
 	
-	# see if the repositories were successfully unmounted
-	df -h
+	# returning 0 to indicate the unmount process was successful
+	true	
 
 else
-	echo -e "CVMFS repositories are not mounted\n"
+	# CVMFS mount points do not exist in the file system
+	loginfo "No CVMFS repositories found mounted. Exiting the script..."
+	
+	# returning 1 to indicate that unmount process failed (i.e. nothing was unmounted as CVMFS was not previously mounted)
+	false
 	
 fi
 
-log_marker "END" "UNMOUNTING"
+loginfo "End log for unmounting CVMFS"
+loginfo "..."
 
 ########################################################################################################
-# This is the end of the main program.
+# End: main program
 ########################################################################################################

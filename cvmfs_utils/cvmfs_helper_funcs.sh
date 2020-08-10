@@ -4,7 +4,8 @@
 #
 # 
 # Description:
-#	This script contains helper functions that support the mount/unmount of CVMFS on worker nodes.
+#	This script contains helper functions that support the mount/unmount of 
+#	CVMFS on worker nodes.
 #
 #
 # Used by:
@@ -26,8 +27,17 @@
 #exec &> $LOGFILE
 
 variables_reset() {
-	# not really used, mainly to list the common variables
-	GWMS_SYSTEM_CHECK=				# used to indicate whether the perform_system_check function has been run
+	# DESCRIPTION: This function lists and initializes the common variables
+	# to empty strings. These variables also become available to scripts 
+	# that import functions defined in this script.
+	#
+	# INPUT(S): None
+	# RETURN(S): Variables initialized to empty strings
+	
+	# indicates whether the perform_system_check function has been run
+	GWMS_SYSTEM_CHECK=
+
+	# following set of variables used to store operating system and kernel info
 	GWMS_OS_DISTRO=
 	GWMS_OS_VARIANT=
 	GWMS_OS_KRNL_NUM=
@@ -35,44 +45,62 @@ variables_reset() {
 	GWMS_OS_KRNL_MAJOR_REV=
 	GWMS_OS_KRNL_MINOR_REV=
 	GWMS_OS_KRNL_PATCH_NUM=
+	
+	# indicates whether CVMFS is mounted
 	GWMS_IS_CVMFS_MNT=
-	GWMS_IS_CVMFS=
-	GWMS_IS_UNPRIV_USERNS_SUPPORTED=   		# used to check if unpriv userns is available (or supported); not if it is enabled
-	GWMS_IS_UNPRIV_USERNS_ENABLED=   		# used to check if unpriv userns is enabled (and available)
-	GWMS_IS_FUSERMOUNT=
+	#GWMS_IS_CVMFS=
+
+	# indicates if unpriv userns is available (or supported); not if it is enabled
+	GWMS_IS_UNPRIV_USERNS_SUPPORTED=
+	# indicates if unpriv userns is enabled (and available)
+	GWMS_IS_UNPRIV_USERNS_ENABLED= 
+	
+	# following variables store FUSE-related information 
 	GWMS_IS_FUSE_INSTALLED=
+	GWMS_IS_FUSERMOUNT=
 	GWMS_IS_USR_IN_FUSE_GRP=
 }
 
+
 loginfo() {
-        # return 0 if not verbose (needed for bats test), print to stderr if verbose
-        #[[ -z "$VERBOSE" ]] && return
+	# DESCRIPTION: This function prints informational messages to STDOUT
+	# along with hostname and date/time.
+	# 
+	# INPUT(S): String containing the message
+	# RETURN(S): Prints message to STDOUT
+
 	echo -e "$(hostname -s) $(date +%m-%d-%Y\ %T\ %Z) \t INFO: $1" >&2
 }
 
+
 logwarn(){
+	# DESCRIPTION: This function prints warning messages to STDOUT along
+	# with hostname and date/time.
+	#
+	# INPUT(S): String containing the message 
+	# RETURN(S): Prints message to STDOUT
+
 	echo -e "$(hostname -s) $(date +%m-%d-%Y\ %T\ %Z) \t WARNING: $1" >&2
 }
 
+
 logerror() {
+	# DESCRIPTION: This function prints error messages to STDOUT along with
+	# hostname and date/time.
+        #
+        # INPUT(S): String containing the message
+	# RETURN(S): Prints message to STDOUT
+
 	echo -e "$(hostname -s) $(date +%m-%d-%Y\ %T\ %Z) \t ERROR: $1" >&2
 }
 
 
-log_marker() {
-        # marker to indicate the start/end of log contents from the script executio
-        # input: (1) string indicating start or end log marker, (2) string indicating logging for mounting or unmounting                
-        # return value: None
-
-        #echo -e "\n------------------------------- $1 OF LOG INFO FOR $2 CVMFS --------------------------------------\n"
-        echo "${1}ing log for ${2}ing CVMFS"
-}
-
-
 check_exit_status () {
-        # checks exit status and prints appropriate message to the console
-        # input: variable containing system information (created in the perform_system_check function)
-        # return value: None
+        # DESCRIPTION: This function prints an appropriate message to the
+        # console to indicate what the exit status means.
+        #
+        # INPUT(S): Number (exit status of a previously run command)
+        # RETURN(S): Prints "yes" or "no" to indicate the result of the command
 
         case $1 in
                 "0")
@@ -82,25 +110,21 @@ check_exit_status () {
         esac
 }
 
-#check_os_distro () {
-        # checks operating system distribution and prints appropriate message to the console
-        # input: variable containing operating system distribution information
-        # return value: None
-
-#        case $1 in
-#                "rhel")
-#                    echo "RHEL";;
-#                "non-rhel")
-#                    echo "Non-RHEL";;
-#                *)
-#        esac
-#}
-
-
 
 perform_system_check() {
-	# perform required system checks (OS variant, kernel version, unprivileged userns, and others) and store the results in variables for later use
-	
+        # DESCRIPTION: This functions performs required system checks (such as
+        # operating system and kernel info, unprivileged user namespaces, FUSE
+        # status) and stores the results in the common variables for later use.
+        #
+        # INPUT(S): None
+        # RETURN(S): 
+	# 	-> common variables containing the exit status of the
+	# 	corresponding commands
+	# 	-> results from running the check_exit_status function
+	# 	for logging purposes (variables starting with res_)
+	# 	-> assigns "yes" to GWMS_SYSTEM_CHECK to indicate this function
+	# 	has been run.
+
 	if [ -f '/etc/redhat-release' ]; then
 		GWMS_OS_DISTRO=RHEL
 	else
@@ -143,16 +167,28 @@ perform_system_check() {
 
 }
 
+
 print_os_info () {
-        # prints operating system information along with kernel number
+        # DESCRIPTION: This functions prints operating system and kernel
+        # information to STDOUT.
+        #
+        # INPUT(S): None
+        # RETURN(S): Prints a message containing OS and kernel details
 
         loginfo "Found $GWMS_OS_DISTRO${GWMS_OS_VARIANT} with kernel $GWMS_OS_KRNL_NUM-$GWMS_OS_KRNL_PATCH_NUM"
 }
 
+
 log_all_system_info () {
-	# logs all required system information stored in variables (print to stderr) for easy debugging
-	# collecting information about the nodes can be useful for troubleshooting and gathering stats about what is out there
-	
+        # DESCRIPTION: This function prints all the necessary system information
+        # stored in common and result variables (see perform_system_check
+        # function) for easy debugging. This has been done as collecting
+        # information about the worker node can be useful for troubleshooting
+        # and gathering stats about what is out there.
+        #
+        # INPUT(S): None
+        # RETURN(S): Prints user-friendly messages to STDOUT
+
 	loginfo "..."
 	loginfo "Worker node details: "	
 	loginfo "Operating system distro: $GWMS_OS_DISTRO"
@@ -173,37 +209,56 @@ log_all_system_info () {
 
 
 mount_cvmfs_repos () {
-	# mounts all the required CVMFS repositories
-	# input: (1) CVMFS configuration repository, (2) CVMFS repositories
-        # return value: None
+        # DESCRIPTION: This function mounts all the required and additional
+        # CVMFS repositories that would be needed for user jobs.
+        #
+        # INPUT(S): 1. CVMFS configuration repository (string); 2. Additional CVMFS
+        # repositories (colon-delimited string)
+        # RETURN(S): Mounts the defined repositories on the worker node filesystem
+
+	# mounting the configuration repo (pre-requisite)
+	#$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
+	#.cvmfsexec/mountrepo $1
 	
-	$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
-	
+	# using an array to unpack the names of additional CVMFS repositories
+	# from the colo-delimited string
 	declare -a cvmfs_repos
 	repos=($(echo $2 | tr ":" "\n"))
 	#echo ${repos[@]}       
 	
-	for repo in "${repos[@]}"
-	do
-		$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
-	done
+	# mount every repository that was previously unpacked
+	#for repo in "${repos[@]}"
+	#do
+	#	$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
+	#	.cvmfsexec/mountrepo $repo
+	#done
 
-	loginfo ""	
-	# see if the repositories got mounted
-	df -h
+	# see if all the repositories got mounted
+	num_repos_mntd=`df -h | grep /cvmfs | wc -l`
+	total_num_repos=$(( ${#repos[@]} + 1 ))
+	if [ "$num_repos_mntd" -eq "$total_num_repos" ]; then
+		loginfo "All CVMFS repositories mounted successfully on the worker node"
+		true
+	else
+		logwarn "One or more CVMFS repositories might not be mounted on the worker node"
+		false
+	fi
+	
+	GWMS_IS_CVMFS=$?
+	#echo $GWMS_IS_CVMFS
 }
 
 
 has_unpriv_userns() {
-	# checks whether unprivileged user namespaces are enabled or not and sets a flag
-	# input: two variables that denote whether unprivileged user namespaces is enabled (based on unshare and sysctl commands)
-	# return value: numeric flag denoting the combination of the inputs
-	
-	# Return true (0) if unprivileged user namespaces are available and enabled, false otherwise
-	# Uses GWMS_IS_UNPRIV_USERNS_AVAILABLE and GWMS_IS_UNPRIV_USERNS_ENABLED (must run after perform_system_check())
-	# return:
-	#   0 if unpriv userns can be used (available and enabled)
-	#   stdout: status of unpriv userns (unavailable, disabled, enabled, error)
+        # DESCRIPTION: This function checks the status of unprivileged user
+        # namespaces being supported and enabled on the worker node. Depending 
+        #
+        # INPUT(S): None
+        # RETURN(S): 
+	#	-> true (0) if unpriv userns can be used (supported and enabled),
+	#	false otherwise
+	#	-> status of unpriv userns (unavailable, disabled, enabled,
+	#	error) to stdout
 
 	# make sure that perform_system_check has run	
 	[[ -z "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
@@ -237,22 +292,18 @@ has_unpriv_userns() {
 
 }
 
+
 has_fuse() {
-	# checks whether (1) fuse is installed and/or (2) fusermount is available and sets a flag
-	# input: (1) variable denoting fuse installation and (2) variable denoting availability of fusermount
-	# return value: numeric flag denoting the combination of the inputs
-	
+        # DESCRIPTION: This function checks FUSE-related configurations on the
+        # worker node. This is a pre-requisite before evaluating whether CVMFS
+        # is mounted on the filesystem.
+        # 
+        # FUSE Documentation references:
 	# https://www.kernel.org/doc/html/latest/filesystems/fuse.html
-	# https://en.wikipedia.org/wiki/Filesystem_in_Userspace       -- documentation purpose; free to include additional references
-	# Left similar, probably should say if fuse can be used, calling it 'has_fuse'
-	# should use also GWMS_IS_USR_IN_FUSE_GRP or the unprivileged userns variables?
-	
-	# Return true (0) if unprivileged user namespaces are available and enabled, false otherwise
-	# Uses GWMS_IS_FUSERMOUNT, GWMS_IS_FUSE_INSTALLED (must run after perform_system_check())
-	# checks whether (1) fuse is installed and/or (2) fusermount is available and sets a flag
-	# return:
-	#   0,1,2: numeric flag denoting the combination of the inputs
-	#   stdout: word about fuse availability (both -fuse+fusermount-, fuse, no)
+        # https://en.wikipedia.org/wiki/Filesystem_in_Userspace
+        #
+        # INPUT(S): None
+        # RETURN(S): string denoting fuse availability (yes, no, error)
 
 	# make sure that perform_system_check has run
 	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
@@ -319,14 +370,15 @@ has_fuse() {
 }
 
 
-
 evaluate_worker_node_config () {
-	# evaluates what option to use to mount CVMFS repositories on the system given the OS version and the kernel number
-	# input: (1) OS version and kernel number [(2) version, (3) major revision, (4) minor revision and (5) patch number)]
-	# return value: flag indicating whether CVMFS repositories can be mounted with mountrepo utility
+        # DESCRIPTION: This function evaluates the worker using FUSE and
+        # unpriv. userns configurations to determine whether CVMFS can be
+        # mounted using mountrepo utility.
+        #
+        # INPUT(S): None
+        # RETURN(S): string message whether CVMFS can be mounted 
 
-	# only use has_unpriv_userns and has_fuse (user group too) for deterimning what option is possible to be used.
-	# keep the kernel and OS info only for logging; understand the correlataion with the result of these methods to see if the tabulated association is accurate
+	# collect info about FUSE configuration on the worker node
 	fuse_config_status=$(has_fuse)	
 
 	# check fuse related configurations in the system (worker node)
