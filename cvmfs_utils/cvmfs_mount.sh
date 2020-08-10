@@ -21,77 +21,71 @@
 #
 
 
-
-# name of the glidein configuration file and entry id
-glidein_config=$1
-entry_id=$2
-
 # to implement custom logging
 # https://stackoverflow.com/questions/42403558/how-do-i-manage-log-verbosity-inside-a-shell-script
 # WORKAROUND: redirect stdout and stderr to some file 
 #LOGFILE="cvmfs_all.log"
 #exec &> $LOGFILE
 
-# source the script containing helper functions before executing this script
-source cvmfs_helper_funcs.sh
 
 ########################################################################################################
-# This is the start of the main program...
+# Start: main program
 ########################################################################################################
 
+# reset all variables used in this script's namespace before executing the rest of the script
+variables_reset
+
+# perform checks on the worker node that will be used to assess whether CVMFS can be mounted or not
 perform_system_check
 
-log_marker "START" "MOUNTING"
+#loginfo "Start log for mounting CVMFS"
 
-log_system_info
+# print/display all information pertaining to system checks performed previously (facilitates easy troubleshooting)
+log_all_system_info
 
-# initializing the repos for CVMFS
-CVMFS_CONFIG_REPO=cvmfs-config.cern.ch
-CVMFS_REPOS=config-osg.opensciencegrid.org:singularity.opensciencegrid.org:cms.cern.ch
-# set an environment variable that suggests additional repos to be mounted after config repos are mounted
-#export CVMFS_REPOS=$REPOS
+# initializing CVMFS repositories to a variable for easy addition/removal in the future
+GLIDEIN_CVMFS_CONFIG_REPO=cvmfs-config.cern.ch
+GLIDEIN_CVMFS_REPOS=config-osg.opensciencegrid.org:singularity.opensciencegrid.org:cms.cern.ch
+# (optional) set an environment variable that suggests additional repos to be mounted after config repos are mounted
 
-# detect if CVMFS is installed (using the global variable)
-if [ $IS_CVMFS_MNT -eq 0 ]; then
+# detect if CVMFS is installed (using the global variable created during perform_system_check)
+if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
 	# do nothing (if CVMFS is installed)
-	echo -e "\nCVMFS is installed on the worker node!!"
+	loginfo "CVMFS is installed on the worker node and available for use"
+	# exit 0
 else
 	# if not, install CVMFS via mountrepo or cvmfsexec
-	echo -e "\nCVMFS is NOT installed on the worker node! Installing now..."
-	# check the operating system distro
-	if [[ $OS_DISTRO = "rhel" ]]; then
-		# check operating system and kernel info to decide what to use (cvmfsexec, mountrepo, etc.)
-		evaluate_os_and_kernel $OS_VARIANT $KRNL_VER $KRNL_MAJOR_REV $KRNL_MINOR_REV $KRNL_PATCH_NUM
-		res_mount=$?
+	loginfo "CVMFS is NOT installed on the worker node! Installing now..."
+	# check the operating system distribution
+	if [[ $GWMS_OS_DISTRO = RHEL ]]; then
+		# evaluate the worker node's system configurations to decide whether CVMFS can be mounted or not
+		loginfo "Evaluating the worker node..."
+		# display operating system information
+		print_os_info
 		
+		# assess the worker node based on its existing system configurations
+		evaluate_worker_node_config		
 		# depending on the previously caught exit status, perform next steps accordingly
-		if [[ $res_mount -eq 1 ]]; then
-			echo "Mounting CVMFS repositories..."
-			mount_cvmfs_repos $CVMFS_CONFIG_REPO $CVMFS_REPOS
-			echo -e "CVMFS repositories mounted\n"
+		if [[ $? -eq 0 ]]; then
+			# if evaluation was true, then proceed to mount CVMFS
+			loginfo "Mounting CVMFS repositories..."
+			mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS
 		else
-			echo "Cannot mount CVMFS repositories!"
+			# if evaluation was false, then exit from this activity of mounting CVMFS
 			exit 1
 		fi	
-	else	# OS_DISTRO = "non-rhel" (any non-rhel OS)
+	else
+		# if operating system distribution is non-RHEL (any non-rhel OS)
+		# display operating system information and a user-friendly message	
 		print_os_info
-		echo "This is a non-RHEL OS and is not covered in the implementation yet!"
-		# ----- THINK ABOUT THIS FURTHER ----- #
+		logwarn "This is a non-RHEL OS and is not covered in the implementation yet!"
+		# ----- Further Implementation: TBD (To Be Done) ----- #
 	fi
 
 fi
 
-df -h | grep /cvmfs &> /dev/null
-if [[ $? -eq 0 ]]; then
-	# mimicking the behavior of the glidein on the worker node (start the user job once the CVMFS repositories are mounted)
-	. user_job.sh
-else
-	echo -e "Error occured during mount of CVMFS repositories\n"
-fi
-
-log_marker "END" "MOUNTING"
+#loginfo "End log for mounting CVMFS"
 
 ########################################################################################################
-# This is the end of the main program.
+# End: main program
 #######################################################################################################
-
