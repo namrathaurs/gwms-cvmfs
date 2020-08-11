@@ -216,13 +216,21 @@ mount_cvmfs_repos () {
         # repositories (colon-delimited string)
         # RETURN(S): Mounts the defined repositories on the worker node filesystem
 
-	# see if the utilities are still available from the previous mount activity on the worker node
-	if [[ ! -d $cvmfs_utils_dir/.cvmfsexec ]]; then
-		$cvmfs_utils_dir/mycvmfsexec -- echo "CVMFS utilities available" &> /dev/null
-		echo "executing inside"
+	# QUESTION FOR MARCO
+	# see if the utilities are available (in the hidden directory) from the previous mount activity on the worker node
+	# this is not possible since this script is run once at the time of glidein creation on the worker node - is that right???
+	#if [[ ! -d $cvmfs_utils_dir/.cvmfsexec ]]; then
+	#	$cvmfs_utils_dir/mycvmfsexec -- echo "CVMFS utilities available" &> /dev/null
+	#	echo "executing inside"
+	#fi
+	
+	$cvmfs_utils_dir/mycvmfsexec $1 -- echo "setting up mount utilities..." &> /dev/null
+	if [[ $(df -h|grep /cvmfs|wc -l) -eq 1 ]]; then
+		loginfo "CVMFS config repo already mounted!"
+		continue
 	else
-		# if the utilities are already present on the worker node
 		# mounting the configuration repo (pre-requisite)
+		loginfo "Mounting CVMFS config repo now..."
 		$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
 		#.cvmfsexec/mountrepo $1
 	fi
@@ -233,6 +241,7 @@ mount_cvmfs_repos () {
 	repos=($(echo $2 | tr ":" "\n"))
 	#echo ${repos[@]}       
 	
+	loginfo "Mounting additional CVMFS repositories..."
 	# mount every repository that was previously unpacked
 	for repo in "${repos[@]}"
 	do
