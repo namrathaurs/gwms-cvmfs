@@ -216,12 +216,19 @@ mount_cvmfs_repos () {
         # repositories (colon-delimited string)
         # RETURN(S): Mounts the defined repositories on the worker node filesystem
 
-	# mounting the configuration repo (pre-requisite)
-	$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
-	#.cvmfsexec/mountrepo $1
+	# see if the utilities are still available from the previous mount activity on the worker node
+	if [[ ! -d $cvmfs_utils_dir/.cvmfsexec ]]; then
+		$cvmfs_utils_dir/mycvmfsexec -- echo "CVMFS utilities available" &> /dev/null
+		echo "executing inside"
+	else
+		# if the utilities are already present on the worker node
+		# mounting the configuration repo (pre-requisite)
+		$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
+		#.cvmfsexec/mountrepo $1
+	fi
 	
 	# using an array to unpack the names of additional CVMFS repositories
-	# from the colo-delimited string
+	# from the colon-delimited string
 	declare -a cvmfs_repos
 	repos=($(echo $2 | tr ":" "\n"))
 	#echo ${repos[@]}       
