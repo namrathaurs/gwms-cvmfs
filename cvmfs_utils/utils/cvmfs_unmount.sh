@@ -21,13 +21,6 @@
 #
 
 
-# to implement custom logging
-# https://stackoverflow.com/questions/42403558/how-do-i-manage-log-verbosity-inside-a-shell-script
-# WORKAROUND: redirect stdout and stderr to some file 
-#LOGFILE="cvmfs_all.log"
-#exec &> $LOGFILE
-
-
 ########################################################################################################
 # Start: main program
 ########################################################################################################
@@ -57,9 +50,6 @@ else
 	false
 	
 fi
-
-loginfo "End log for unmounting CVMFS"
-loginfo "..."
 
 ########################################################################################################
 # End: main program

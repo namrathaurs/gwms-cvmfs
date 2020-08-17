@@ -46,9 +46,10 @@ variables_reset() {
 	GWMS_OS_KRNL_MINOR_REV=
 	GWMS_OS_KRNL_PATCH_NUM=
 	
-	# indicates whether CVMFS is mounted
+	# indicates whether CVMFS is already mounted
 	GWMS_IS_CVMFS_MNT=
-	#GWMS_IS_CVMFS=
+	# to indicate the status of mounting CVMFS by the glidein after evaluating the worker node
+	GWMS_IS_CVMFS=
 
 	# indicates if unpriv userns is available (or supported); not if it is enabled
 	GWMS_IS_UNPRIV_USERNS_SUPPORTED=
@@ -102,12 +103,7 @@ check_exit_status () {
         # INPUT(S): Number (exit status of a previously run command)
         # RETURN(S): Prints "yes" or "no" to indicate the result of the command
 
-        case $1 in
-                "0")
-                   echo yes;;
-                *)
-                   echo no;;
-        esac
+	[[ $1 -eq 0 ]] && echo yes || echo no
 }
 
 
@@ -140,27 +136,21 @@ perform_system_check() {
 	
 	df -h | grep /cvmfs &>/dev/null
 	GWMS_IS_CVMFS_MNT=$?
-	res_cvmfs_mnt=$(check_exit_status $GWMS_IS_CVMFS_MNT)
 	
 	sysctl user.max_user_namespaces &>/dev/null
 	GWMS_IS_UNPRIV_USERNS_SUPPORTED=$?
-	res_unpriv_userns_supported=$(check_exit_status $GWMS_IS_UNPRIV_USERNS_SUPPORTED)
 	
 	unshare -U true &>/dev/null
 	GWMS_IS_UNPRIV_USERNS_ENABLED=$?
-	res_unpriv_userns_enabled=$(check_exit_status $GWMS_IS_UNPRIV_USERNS_ENABLED)
 	
 	yum list installed *fuse* &>/dev/null
 	GWMS_IS_FUSE_INSTALLED=$?
-	res_fuse_installed=$(check_exit_status $GWMS_IS_FUSE_INSTALLED)
 
 	fusermount -V &>/dev/null
         GWMS_IS_FUSERMOUNT=$?
-        res_fusermount=$(check_exit_status $GWMS_IS_FUSERMOUNT)
 
 	getent group fuse | grep $USER &>/dev/null
 	GWMS_IS_USR_IN_FUSE_GRP=$?
-	res_usr_in_fuse_grp=$(check_exit_status $GWMS_IS_USR_IN_FUSE_GRP)
 	
 	# set the variable indicating this function has been run
 	GWMS_SYSTEM_CHECK=yes
@@ -198,12 +188,12 @@ log_all_system_info () {
 	loginfo "Kernel minor revision: $GWMS_OS_KRNL_MINOR_REV"
 	loginfo "Kernel patch number: $GWMS_OS_KRNL_PATCH_NUM"
 	
-	loginfo "CVMFS installed: $res_cvmfs_mnt"
-	loginfo "Unprivileged user namespaces supported: $res_unpriv_userns_supported"
-	loginfo "Unprivileged user namespaces enabled: $res_unpriv_userns_enabled"
-	loginfo "FUSE installed: $res_fuse_installed"
-	loginfo "fusermount available: $res_fusermount"
-	loginfo "Is the user in 'fuse' group: $res_usr_in_fuse_grp"
+	loginfo "CVMFS installed: $(check_exit_status $GWMS_IS_CVMFS_MNT)"
+	loginfo "Unprivileged user namespaces supported: $(check_exit_status $GWMS_IS_UNPRIV_USERNS_SUPPORTED)"
+	loginfo "Unprivileged user namespaces enabled: $(check_exit_status $GWMS_IS_UNPRIV_USERNS_ENABLED)"
+	loginfo "FUSE installed: $(check_exit_status $GWMS_IS_FUSE_INSTALLED)"
+	loginfo "fusermount available: $(check_exit_status $GWMS_IS_FUSERMOUNT)"
+	loginfo "Is the user in 'fuse' group: $(check_exit_status $GWMS_IS_USR_IN_FUSE_GRP)"
 	loginfo "..."
 }
 
@@ -288,7 +278,7 @@ has_unpriv_userns() {
 			echo enabled
 		else
 			# unprivileged user namespaces is not supported
-			logwarn "Inconsistent system configuration: unprivileged userns is enabled but not supported" 
+			logerror "Inconsistent system configuration: unprivileged userns is enabled but not supported" 
         		echo error
 		fi
 		true
@@ -350,8 +340,8 @@ has_fuse() {
                                 fi
                         else
                                 # user is not in fuse group -> fusermount is unavailable (scenario 5b)
-                                if [[ "${GWMS_IS_FUSERMOUNT}" -eq 0 ]]; then
-                                        logwarn "Inconsistent system configuration: fusermount is unavailable with fuse installed but when user is not in fuse group"
+				if [[ "${GWMS_IS_FUSERMOUNT}" -eq 0 ]]; then
+                                        logwarn "Inconsistent system configuration: fusermount is available only when user is in fuse group and fuse is installed"
                                         echo error
                                 else
                                         loginfo "FUSE requirements not satisfied: user is not in fuse group"
@@ -408,7 +398,7 @@ evaluate_worker_node_config () {
 		false
 	elif [[ $fuse_config_status == error ]]; then
 		# inconsistent system configurations detected in the worker node
-		logerror "Worker node does not satisfy requirements for using mountrepo utility"
+		logerror "Detected inconsistent configurations on the worker node. mountrepo utility cannot be used!!"
 		false	
 	fi
 		
