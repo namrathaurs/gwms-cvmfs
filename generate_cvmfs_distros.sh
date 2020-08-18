@@ -13,13 +13,14 @@ usage() {
 cvmfs_src=$1
 cvmfsexec_temp=/tmp/cvmfsexec_pkg
 cvmfsexec_base=$cvmfsexec_temp/cvmfsexec
+
 if [[ ! $cvmfs_src =~ ^(osg|egi|default)$ ]]; then
 	echo "Invalid command line argument: Must be one of {osg|egi|default}"
 	exit 1
 fi
 
 if [[ ! -d $cvmfsexec_base ]]; then
-	git clone https://www.github.com/cvmfs/cvmfsexec.git $cvmfsexec_base
+	git clone https://www.github.com/cvmfs/cvmfsexec.git $cvmfsexec_base &> $cvmfsexec_temp/gen_distros.log 
 elif [[ -d $cvmfsexec_base && -d $cvmfsexec_base/dist ]]; then
 	rm -rf $cvmfsexec_base/dist	
 fi
@@ -28,14 +29,15 @@ fi
 supported_types=rhel6-x86_64:rhel7-x86_64:rhel8-x86_64:suse15-x86_64
 declare -a avail_types
 avail_types=($(echo $supported_types | tr ":" "\n"))
-echo ${avail_types[@]}       
+#echo ${avail_types[@]}       
 
 for type in "${avail_types[@]}"
 do
+	echo "Making $cvmfs_src distribution for $type machine..."
 	os=`echo $type | awk -F'-' '{print $1}'`
 	arch=`echo $type | awk -F'-' '{print $2}'`		
-	$cvmfsexec_base/makedist -m $type $cvmfs_src
-	$cvmfsexec_base/makedist -o $cvmfsexec_temp/cvmfsexec-${cvmfs_src}-${os}-${arch}
+	$cvmfsexec_base/makedist -m $type $cvmfs_src &>> $cvmfsexec_temp/gen_distros.log 
+	$cvmfsexec_base/makedist -o $cvmfsexec_temp/cvmfsexec-${cvmfs_src}-${os}-${arch} &>> $cvmfsexec_temp/gen_distros.log
 
 	# delete the dist directory within cvmfsexec to download the cvmfs configuration
 	# and repositories for another machine type
