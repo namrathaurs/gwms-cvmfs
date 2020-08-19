@@ -217,14 +217,15 @@ mount_cvmfs_repos () {
 	#	echo "executing inside"
 	#fi
 	
-	$cvmfs_utils_dir/mycvmfsexec $1 -- echo "setting up mount utilities..." &> /dev/null
+	#$cvmfs_utils_dir/mycvmfsexec $1 -- echo "setting up mount utilities..." &> /dev/null
+	$cvmfs_utils_dir/distros/$dist_file $1 -- echo "setting up mount utilities..." &> /dev/null
 	if [[ $(df -h|grep /cvmfs|wc -l) -eq 1 ]]; then
 		loginfo "CVMFS config repo already mounted!"
 		continue
 	else
 		# mounting the configuration repo (pre-requisite)
 		loginfo "Mounting CVMFS config repo now..."
-		$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
+		$cvmfs_utils_dir/distros/.cvmfsexec/mountrepo $1
 		#.cvmfsexec/mountrepo $1
 	fi
 	
@@ -238,7 +239,7 @@ mount_cvmfs_repos () {
 	# mount every repository that was previously unpacked
 	for repo in "${repos[@]}"
 	do
-		$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
+		$cvmfs_utils_dir/distros/.cvmfsexec/mountrepo $repo
 	#	.cvmfsexec/mountrepo $repo
 	done
 
