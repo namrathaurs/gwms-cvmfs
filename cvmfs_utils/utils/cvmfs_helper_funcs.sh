@@ -39,7 +39,8 @@ variables_reset() {
 
 	# following set of variables used to store operating system and kernel info
 	GWMS_OS_DISTRO=
-	GWMS_OS_VARIANT=
+	GWMS_OS_VERSION=
+	GWMS_OS_KRNL_ARCH=
 	GWMS_OS_KRNL_NUM=
 	GWMS_OS_KRNL_VER=
 	GWMS_OS_KRNL_MAJOR_REV=
@@ -122,12 +123,13 @@ perform_system_check() {
 	# 	has been run.
 
 	if [ -f '/etc/redhat-release' ]; then
-		GWMS_OS_DISTRO=RHEL
+		GWMS_OS_DISTRO=rhel
 	else
-		GWMS_OS_DISTRO=Non-RHEL
+		GWMS_OS_DISTRO=non-rhel
 	fi
 	
-	GWMS_OS_VARIANT=`lsb_release -r | awk -F'\t' '{print $2}'`
+	GWMS_OS_VERSION=`lsb_release -r | awk -F'\t' '{print $2}'`
+	GWMS_OS_KRNL_ARCH=`arch`
 	GWMS_OS_KRNL_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " `
 	GWMS_OS_KRNL_VER=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $1}'`
 	GWMS_OS_KRNL_MAJOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $2}'`
@@ -165,7 +167,7 @@ print_os_info () {
         # INPUT(S): None
         # RETURN(S): Prints a message containing OS and kernel details
 
-        loginfo "Found $GWMS_OS_DISTRO${GWMS_OS_VARIANT} with kernel $GWMS_OS_KRNL_NUM-$GWMS_OS_KRNL_PATCH_NUM"
+        loginfo "Found $GWMS_OS_DISTRO${GWMS_OS_VERSION}-${GWMS_OS_KRNL_ARCH} with kernel $GWMS_OS_KRNL_NUM-$GWMS_OS_KRNL_PATCH_NUM"
 }
 
 
@@ -182,7 +184,8 @@ log_all_system_info () {
 	loginfo "..."
 	loginfo "Worker node details: "	
 	loginfo "Operating system distro: $GWMS_OS_DISTRO"
-	loginfo "Operating System version: $GWMS_OS_VARIANT"
+	loginfo "Operating System version: $GWMS_OS_VERSION"
+	loginfo "Kernel Architecture: $GWMS_OS_KRNL_ARCH"
 	loginfo "Kernel version: $GWMS_OS_KRNL_VER"
 	loginfo "Kernel major revision: $GWMS_OS_KRNL_MAJOR_REV"
 	loginfo "Kernel minor revision: $GWMS_OS_KRNL_MINOR_REV"
