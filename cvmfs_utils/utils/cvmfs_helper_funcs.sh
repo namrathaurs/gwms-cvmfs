@@ -19,12 +19,24 @@
 #
 
 
-
 # to implement custom logging
 # https://stackoverflow.com/questions/42403558/how-do-i-manage-log-verbosity-inside-a-shell-script
 # WORKAROUND: redirect stdout and stderr to some file 
 #LOGFILE="cvmfs_all.log"
 #exec &> $LOGFILE
+
+# fetch the error reporting helper script
+#error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
+#echo $error_gen
+
+# get the CVMFS requirement setting passed as one of the factory attributes
+#glidein_cvmfs=`grep '^GLIDEIN_CVMFS ' $glidein_config | awk '{print $2}'
+#echo $glidein_cvmfs
+
+# make the attribute value case insensitive
+#glidein_cvmfs=${glidein_cvmfs,,}
+# Alt this will work on older bash (like on Mac: 
+# glidein_cvmfs=$(echo ${glidein_cvmfs} | tr [A-Z] [a-z])
 
 variables_reset() {
 	# DESCRIPTION: This function lists and initializes the common variables
@@ -254,7 +266,7 @@ mount_cvmfs_repos () {
 		false
 	fi
 	
-	GWMS_IS_CVMFS=$?
+	#GWMS_IS_CVMFS=$?
 	#echo $GWMS_IS_CVMFS
 }
 
@@ -327,7 +339,8 @@ has_fuse() {
 	
 	# exit from the script if unprivileged namespaces are not supported but enabled in the kernel
 	if [[ "${unpriv_userns_config}" == error ]]; then
-		exit 1
+		"$error_gen" -error "`basename $0`" "WN_Resource" "Unprivileged user namespaces are not supported but enabled in the kernel! Check system configuration."
+		#exit 1
 	# determine if mountrepo/umountrepo could be used by checking availability of fuse, fusermount and user being in fuse group...
 	elif [[ "${GWMS_IS_FUSE_INSTALLED}" -eq 0 ]]; then
 		# fuse is installed
