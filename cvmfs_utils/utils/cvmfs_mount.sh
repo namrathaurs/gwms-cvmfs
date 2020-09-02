@@ -26,12 +26,16 @@ error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
 #echo $error_gen
 
 # get the CVMFS requirement setting passed as one of the factory attributes
-glidein_cvmfs=`grep '^GLIDEIN_CVMFS ' $glidein_config | awk '{print $2}'
-echo $glidein_cvmfs
+glidein_cvmfs=`grep '^GLIDEIN_CVMFS ' $glidein_config | awk '{print $2}'`
+#echo $glidein_cvmfs
+# make the attribute value case insensitive
+glidein_cvmfs=${glidein_cvmfs,,}
+# Alt this will work on older bash (like on Mac: 
+# glidein_cvmfs=$(echo ${glidein_cvmfs} | tr [A-Z] [a-z])
 
 # get the CVMFS source information from the factory attributes
 cvmfs_source=`grep '^CVMFS_SRC ' $glidein_config | awk '{print $2}'`
-loginfo "CVMFS Source: $cvmfs_source"
+#loginfo "CVMFS Source: $cvmfs_source"
 
 ########################################################################################################
 # Start: main program
@@ -48,6 +52,7 @@ perform_system_check
 # print/display all information pertaining to system checks performed previously (facilitates easy troubleshooting)
 log_all_system_info
 
+#cvmfs_source=osg
 loginfo "$cvmfs_source"
 # initializing CVMFS repositories to a variable for easy modification in the future
 case $cvmfs_source in
@@ -66,6 +71,9 @@ case $cvmfs_source in
 		GLIDEIN_CVMFS_CONFIG_REPO=cvmfs-config.cern.ch
 		GLIDEIN_CVMFS_REPOS=config-osg.opensciencegrid.org:singularity.opensciencegrid.org:cms.cern.ch
 		;;
+	*)
+		"$error_gen" -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS source."
+		exit 1	
 esac
 # (optional) set an environment variable that suggests additional repos to be mounted after config repos are mounted
 loginfo "Here: $GLIDEIN_CVMFS_CONFIG_REPO"
@@ -89,30 +97,34 @@ else
 	# assess the worker node based on its existing system configurations and perform next steps accordingly
 	if evaluate_worker_node_config ; then
 		# if evaluation was true, then proceed to mount CVMFS
-		loginfo "Mounting CVMFS repositories..."
-		mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS
-		echo $?
-			
-	#else
+		if [[ $glidein_cvmfs = never ]]; then
+			# do nothing; test the node and print the results but do not even try to mount CVMFS
+                        # just continue with glidein startup
+                        echo $?
+                        "$error_gen" -ok "`basename $0`" "Not trying to install CVMFS."
+		else
+			loginfo "Mounting CVMFS repositories..."
+			if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
+				continue
+			else
+				if [[ $glidein_cvmfs = required ]]; then
+					# if mount CVMFS is not successful, report an error and exit with failure exit code
+					echo $?
+					"$error_gen" -error "`basename $0`" "WN_Resource" "CVMFS is required but unable to mount CVMFS on the worker node."
+					exit 1
+				elif [[ $glidein_cvmfs = preferred || $glidein_cvmfs = optional ]]; then
+					# if mount CVMFS is not successful, report a warning/error in the logs and continue with glidein startup
+					# script status must be OK, otherwise the glidein will fail 		
+                        		echo $?
+					"$error_gen" -ok "`basename $0`" "WN_Resource" "Unable to mount required CVMFS on the worker node. Continuing without CVMFS."
+				else
+					"$error_gen" -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS requirement."
+					exit 1
+		fi
+	else
 		# if evaluation was false, then exit from this activity of mounting CVMFS
-		# exit 1
-	#	if [[ "$glidein_cvmfs" = required ]]; then
-         #       	# try to mount CVMFS, if not report an error and exit with failure exit code
-	  #              "$error_gen" -error "`basename $0`" "WN_Resource" "Unable to mount required CVMFS on the worker node."
-        #	        exit 1
-	 #       elif [[ "$glidein_cvmfs" = preferred || "$glidein_cvmfs" == optional ]]; then
-        #	        # try to mount CVMFS, if not report a warning/error in the logs and continue with glidein startup
-         #       	# script status must be OK, otherwise the glidein will fail
-	  #              "$error_gen" -ok "`basename $0`" "WN_Resource" "Unable to mount required CVMFS on the worker node. Continuing without CVMFS."
-	   #     elif [[ "$glidein_cvmfs" = never ]]; then
-        #	        # do nothing; test the node and print the results but do not even try to mount CVMFS (people do not want it)
-         #       	# just continue with glidein startup
-	  #              "$error_gen" -ok "`basename $0`" "Not trying to install CVMFS."
-        #	else
-         #       	"$error_gen -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS requirement."
-	  #              exit 1
-        #	fi
-
+		"$error_gen" -error "`basename $0`" "WN_Resource" "Worker node configuration did not pass the evaluation checks. CVMFS will not be mounted."
+		exit 1
 	fi	
 #else
 	# if operating system distribution is non-RHEL (any non-rhel OS)
