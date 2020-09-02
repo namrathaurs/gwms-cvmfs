@@ -23,11 +23,9 @@
 
 # fetch the error reporting helper script
 error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
-#echo $error_gen
 
 # get the CVMFS requirement setting passed as one of the factory attributes
 glidein_cvmfs=`grep '^GLIDEIN_CVMFS ' $glidein_config | awk '{print $2}'`
-#echo $glidein_cvmfs
 # make the attribute value case insensitive
 glidein_cvmfs=${glidein_cvmfs,,}
 # Alt this will work on older bash (like on Mac: 
@@ -35,7 +33,8 @@ glidein_cvmfs=${glidein_cvmfs,,}
 
 # get the CVMFS source information from the factory attributes
 cvmfs_source=`grep '^CVMFS_SRC ' $glidein_config | awk '{print $2}'`
-#loginfo "CVMFS Source: $cvmfs_source"
+# make the attribute value case insensitive
+cvmfs_source=${cvmfs_source,,}
 
 ########################################################################################################
 # Start: main program
