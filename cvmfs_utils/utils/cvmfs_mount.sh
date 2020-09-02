@@ -120,6 +120,7 @@ else
 				else
 					"$error_gen" -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS requirement."
 					exit 1
+				fi
 			fi
 		fi
 	else
