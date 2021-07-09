@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo $1
+echo $#
 # first parameter passed to this script will always be the glidein configuration file (glidein_config)
 glidein_config=$1
 
