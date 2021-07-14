@@ -52,7 +52,7 @@ perform_system_check
 log_all_system_info
 
 #cvmfs_source=osg
-loginfo "$cvmfs_source"
+loginfo "CVMFS Source = $cvmfs_source"
 # initializing CVMFS repositories to a variable for easy modification in the future
 case $cvmfs_source in
 	osg)
@@ -75,7 +75,7 @@ case $cvmfs_source in
 		exit 1	
 esac
 # (optional) set an environment variable that suggests additional repos to be mounted after config repos are mounted
-loginfo "Here: $GLIDEIN_CVMFS_CONFIG_REPO"
+loginfo "CVMFS Config Repo = $GLIDEIN_CVMFS_CONFIG_REPO"
 
 # detect if CVMFS is mounted (using the global variable created during perform_system_check)
 if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
@@ -104,7 +104,8 @@ else
 		else
 			loginfo "Mounting CVMFS repositories..."
 			if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
-				continue
+				#continue
+                                ;
 			else
 				if [[ $glidein_cvmfs = required ]]; then
 					# if mount CVMFS is not successful, report an error and exit with failure exit code
