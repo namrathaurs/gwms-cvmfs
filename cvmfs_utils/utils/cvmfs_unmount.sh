@@ -37,8 +37,8 @@ use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
 if [[ $use_cvmfsexec -ne 1 ]]; then
-	echo "Not using cvmfsexec; skipping cleanup..."
-        exit 0 # use error_gen file for reporting the status
+        "$error_gen" -ok "`basename $0`" "WN_Resource" "Not using cvmfsexec; skipping cleanup."
+	exit 0
 fi
 
 # $PWD=/tmp/glide_xxx and every path is referenced with respect to $PWD 
