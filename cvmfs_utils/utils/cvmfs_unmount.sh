@@ -21,8 +21,6 @@
 #
 
 echo "Inside unmounting script..."
-#echo "Number of parameters $#"
-#echo "Parameter 1 $1"
 
 glidein_config=$1
 
