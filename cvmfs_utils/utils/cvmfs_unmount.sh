@@ -30,6 +30,17 @@ work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'`
 cvmfs_utils_dir=$work_dir/cvmfs_utils
 echo "Glidein cvmfs_utils_dir: $cvmfs_utils_dir"
 
+# get the cvmfsexec attribute switch value from the config file
+use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
+# make the attribute value case insensitive
+#use_cvmfsexec=${use_cvmfsexec,,}
+echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
+
+if [[ $use_cvmfsexec -ne 1 ]]; then
+	echo "Not using cvmfsexec; skipping cleanup..."
+        exit 0 # use error_gen file for reporting the status
+fi
+
 # $PWD=/tmp/glide_xxx and every path is referenced with respect to $PWD 
 # source the helper script
 source $cvmfs_utils_dir/utils/cvmfs_helper_funcs.sh

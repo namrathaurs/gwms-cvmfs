@@ -14,10 +14,15 @@ work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'`
 #echo "Glidein Work Directory: $work_dir"
 
 # get the cvmfsexec attribute switch value from the config file
-glidein_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
+use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
 # make the attribute value case insensitive
-#glidein_cvmfsexec=${glidein_cvmfsexec,,}
-echo "glidein_cvmfsexec value: $glidein_cvmfsexec"
+#use_cvmfsexec=${use_cvmfsexec,,}
+echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
+
+if [[ $use_cvmfsexec -ne 1 ]]; then
+        echo "Not using cvmfsexec; skipping setup..."
+        exit 0 # use error_gen file for reporting the status
+fi
 
 # get the CVMFS source information from <attr> in the glidein configuration 
 #cvmfs_source=osg
