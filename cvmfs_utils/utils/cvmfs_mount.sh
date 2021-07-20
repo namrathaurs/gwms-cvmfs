@@ -105,7 +105,7 @@ else
 			loginfo "Mounting CVMFS repositories..."
 			if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
 				#continue
-                                ;
+				;
 			else
 				if [[ $glidein_cvmfs = required ]]; then
 					# if mount CVMFS is not successful, report an error and exit with failure exit code
