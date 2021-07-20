@@ -20,7 +20,7 @@ use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
 if [[ $use_cvmfsexec -ne 1 ]]; then
-	"$error_gen" -ok "`basename $0`" "WN_Resource" "Not using cvmfsexec; skipping setup."
+        "$error_gen" -ok "`basename $0`" "Not using cvmfsexec; skipping setup."
         exit 0
 fi
 
