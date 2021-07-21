@@ -26,13 +26,11 @@ glidein_config=$1
 
 # get the glidein work directory location from glidein_config file
 work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'` 
-#echo "GLIDEIN_WORK_DIR ${work_dir}"
 cvmfs_utils_dir=$work_dir/cvmfs_utils
-echo "Glidein cvmfs_utils_dir: $cvmfs_utils_dir"
 
 # get the cvmfsexec attribute switch value from the config file
 use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
-# make the attribute value case insensitive
+# TODO: int ro string? if string, make the attribute value case insensitive
 #use_cvmfsexec=${use_cvmfsexec,,}
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
