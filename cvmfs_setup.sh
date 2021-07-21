@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#echo $1
-#echo $#
 # first parameter passed to this script will always be the glidein configuration file (glidein_config)
 glidein_config=$1
 
@@ -11,11 +9,10 @@ error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
 
 # get the glidein work directory location from glidein_config file
 work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'`
-#echo "Glidein Work Directory: $work_dir"
 
 # get the cvmfsexec attribute switch value from the config file
 use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
-# make the attribute value case insensitive
+# TODO: int or string?? if string, make the attribute value case insensitive
 #use_cvmfsexec=${use_cvmfsexec,,}
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
@@ -25,18 +22,13 @@ if [[ $use_cvmfsexec -ne 1 ]]; then
 fi
 
 # get the CVMFS source information from <attr> in the glidein configuration 
-#cvmfs_source=osg
 cvmfs_source=`grep '^CVMFS_SRC ' $glidein_config | awk '{print $2}'`
-#echo "CVMFS Source: $cvmfs_source"
 
 # get the CVMFS requirement setting passed as one of the factory attributes
 glidein_cvmfs=`grep '^GLIDEIN_CVMFS ' $glidein_config | awk '{print $2}'`
-#echo $glidein_cvmfs
 
 # store the directory location, to where the tarball is unpacked by the glidein, to a variable
-#cvmfs_utils_dir=/home/testuser/gwms-cvmfs/cvmfs_utils
 cvmfs_utils_dir=$work_dir/cvmfs_utils
-#echo "Glidein cvmfs_utils_dir: $cvmfs_utils_dir"
 
 # $PWD=/tmp/glide_xxx and every path is referenced with respect to $PWD
 # source the helper script
@@ -50,7 +42,6 @@ os_ver=`echo $GWMS_OS_VERSION | awk -F'.' '{print $1}'`
 arch=$GWMS_OS_KRNL_ARCH
 dist_file=cvmfsexec-${cvmfs_source}-${os_like}${os_ver}-${arch}
 		
-#tar -tvzf $cvmfs_utils_dir/utils/cvmfs_distros.tar.gz
 tar -xvzf $cvmfs_utils_dir/utils/cvmfs_distros.tar.gz -C $cvmfs_utils_dir distros/$dist_file
 
 . $cvmfs_utils_dir/utils/cvmfs_mount.sh
