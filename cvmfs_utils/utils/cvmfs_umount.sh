@@ -32,7 +32,7 @@ cvmfs_utils_dir=$work_dir/cvmfs_utils
 
 # get the cvmfsexec attribute switch value from the config file
 use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
-# TODO: int to string? if string, make the attribute value case insensitive
+# TODO: int or string? if string, make the attribute value case insensitive
 #use_cvmfsexec=${use_cvmfsexec,,}
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
