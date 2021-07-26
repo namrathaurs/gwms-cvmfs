@@ -17,7 +17,7 @@ use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'
 echo "GLIDEIN_USE_CVMFSEXEC attribute set to $use_cvmfsexec"
 
 if [[ $use_cvmfsexec -ne 1 ]]; then
-        "$error_gen" -ok "`basename $0`" "Not using cvmfsexec; skipping setup."
+        "$error_gen" -ok "`basename $0`" "msg" "Not using cvmfsexec; skipping setup."
         exit 0
 fi
 
@@ -35,7 +35,6 @@ cvmfs_utils_dir=$work_dir/cvmfs_utils
 source $cvmfs_utils_dir/utils/cvmfs_helper_funcs.sh
 
 perform_system_check
-echo "GWMS_IS_CVMFS_MNT = $GWMS_IS_CVMFS_MNT"
 
 os_like=$GWMS_OS_DISTRO
 os_ver=`echo $GWMS_OS_VERSION | awk -F'.' '{print $1}'`
