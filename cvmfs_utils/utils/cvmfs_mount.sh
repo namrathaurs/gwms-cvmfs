@@ -82,7 +82,7 @@ if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
 	# do nothing (if CVMFS is available)
 	loginfo "CVMFS is mounted on the worker node and available for use"
 	# exit 0
-	"$error_gen" -ok "`basename $0`"
+	"$error_gen" -ok "`basename $0`" "msg" "CVMFS is mounted on the worker node and available for use"
 else
 	# if not, install CVMFS via mountrepo or cvmfsexec
 	loginfo "CVMFS is NOT mounted on the worker node! Installing now..."
@@ -100,7 +100,7 @@ else
 			# do nothing; test the node and print the results but do not even try to mount CVMFS
                         # just continue with glidein startup
                         echo $?
-                        "$error_gen" -ok "`basename $0`" "Not trying to install CVMFS."
+                        "$error_gen" -ok "`basename $0`" "msg" "Not trying to install CVMFS."
 		else
 			loginfo "Mounting CVMFS repositories..."
 			if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
