@@ -26,10 +26,6 @@ glidein_config=$1
 
 error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
 
-# get the glidein work directory location from glidein_config file
-work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'` 
-cvmfs_utils_dir=$work_dir/cvmfs_utils
-
 # get the cvmfsexec attribute switch value from the config file
 use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
 # TODO: int or string? if string, make the attribute value case insensitive
@@ -40,6 +36,10 @@ if [[ $use_cvmfsexec -ne 1 ]]; then
         "$error_gen" -ok "`basename $0`" "msg" "Not using cvmfsexec; skipping cleanup."
         exit 0
 fi
+
+# get the glidein work directory location from glidein_config file
+work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'` 
+cvmfs_utils_dir=$work_dir/cvmfs_utils
 
 # $PWD=/tmp/glide_xxx and every path is referenced with respect to $PWD 
 # source the helper script

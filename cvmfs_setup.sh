@@ -7,9 +7,6 @@ glidein_config=$1
 error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
 #echo $error_gen
 
-# get the glidein work directory location from glidein_config file
-work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'`
-
 # get the cvmfsexec attribute switch value from the config file
 use_cvmfsexec=`grep '^GLIDEIN_USE_CVMFSEXEC ' $glidein_config | awk '{print $2}'`
 # TODO: int or string?? if string, make the attribute value case insensitive
@@ -20,6 +17,9 @@ if [[ $use_cvmfsexec -ne 1 ]]; then
         "$error_gen" -ok "`basename $0`" "msg" "Not using cvmfsexec; skipping setup."
         exit 0
 fi
+
+# get the glidein work directory location from glidein_config file
+work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'`
 
 # get the CVMFS source information from <attr> in the glidein configuration 
 cvmfs_source=`grep '^CVMFS_SRC ' $glidein_config | awk '{print $2}'`
