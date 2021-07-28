@@ -77,57 +77,58 @@ esac
 # (optional) set an environment variable that suggests additional repos to be mounted after config repos are mounted
 loginfo "CVMFS Config Repo = $GLIDEIN_CVMFS_CONFIG_REPO"
 
+# DOES IT MAKE SENSE TO RECHECK LOCAL EXISTENCE OF CVMFS???
 # detect if CVMFS is mounted (using the global variable created during perform_system_check)
-if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
+#if [ $GWMS_IS_CVMFS_MNT -eq 0 ]; then
 	# do nothing (if CVMFS is available)
-	loginfo "CVMFS is mounted on the worker node and available for use"
+#	loginfo "CVMFS is mounted on the worker node and available for use"
 	# exit 0
-	"$error_gen" -ok "`basename $0`" "msg" "CVMFS is mounted on the worker node and available for use"
-else
-	# if not, install CVMFS via mountrepo or cvmfsexec
-	loginfo "CVMFS is NOT mounted on the worker node! Installing now..."
-	# check the operating system distribution
-	#if [[ $GWMS_OS_DISTRO = RHEL ]]; then
-	# evaluate the worker node's system configurations to decide whether CVMFS can be mounted or not
-	loginfo "Evaluating the worker node..."
-	# display operating system information
-	print_os_info
+#	"$error_gen" -ok "`basename $0`" "msg" "CVMFS is mounted on the worker node and available for use"
+#else
+# if not, install CVMFS via mountrepo or cvmfsexec
+loginfo "CVMFS is NOT locally mounted on the worker node! Mounting now..."
+# check the operating system distribution
+#if [[ $GWMS_OS_DISTRO = RHEL ]]; then
+# evaluate the worker node's system configurations to decide whether CVMFS can be mounted or not
+loginfo "Evaluating the worker node..."
+# display operating system information
+print_os_info
 
-	# assess the worker node based on its existing system configurations and perform next steps accordingly
-	if evaluate_worker_node_config ; then
-		# if evaluation was true, then proceed to mount CVMFS
-		if [[ $glidein_cvmfs = never ]]; then
-			# do nothing; test the node and print the results but do not even try to mount CVMFS
-                        # just continue with glidein startup
-                        echo $?
-                        "$error_gen" -ok "`basename $0`" "msg" "Not trying to install CVMFS."
+# assess the worker node based on its existing system configurations and perform next steps accordingly
+if evaluate_worker_node_config ; then
+	# if evaluation was true, then proceed to mount CVMFS
+	if [[ $glidein_cvmfs = never ]]; then
+		# do nothing; test the node and print the results but do not even try to mount CVMFS
+		# just continue with glidein startup
+		echo $?
+		"$error_gen" -ok "`basename $0`" "msg" "Not trying to install CVMFS."
+	else
+		loginfo "Mounting CVMFS repositories..."
+		if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
+			#continue
+			:	
 		else
-			loginfo "Mounting CVMFS repositories..."
-			if mount_cvmfs_repos $GLIDEIN_CVMFS_CONFIG_REPO $GLIDEIN_CVMFS_REPOS ; then
-				#continue
-                                :	
+			if [[ $glidein_cvmfs = required ]]; then
+				# if mount CVMFS is not successful, report an error and exit with failure exit code
+				echo $?
+				"$error_gen" -error "`basename $0`" "WN_Resource" "CVMFS is required but unable to mount CVMFS on the worker node."
+				exit 1
+			elif [[ $glidein_cvmfs = preferred || $glidein_cvmfs = optional ]]; then
+				# if mount CVMFS is not successful, report a warning/error in the logs and continue with glidein startup
+				# script status must be OK, otherwise the glidein will fail 		
+                       		echo $?
+				"$error_gen" -ok "`basename $0`" "WN_Resource" "Unable to mount required CVMFS on the worker node. Continuing without CVMFS."
 			else
-				if [[ $glidein_cvmfs = required ]]; then
-					# if mount CVMFS is not successful, report an error and exit with failure exit code
-					echo $?
-					"$error_gen" -error "`basename $0`" "WN_Resource" "CVMFS is required but unable to mount CVMFS on the worker node."
-					exit 1
-				elif [[ $glidein_cvmfs = preferred || $glidein_cvmfs = optional ]]; then
-					# if mount CVMFS is not successful, report a warning/error in the logs and continue with glidein startup
-					# script status must be OK, otherwise the glidein will fail 		
-                        		echo $?
-					"$error_gen" -ok "`basename $0`" "WN_Resource" "Unable to mount required CVMFS on the worker node. Continuing without CVMFS."
-				else
-					"$error_gen" -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS requirement."
-					exit 1
-				fi
+				"$error_gen" -error "`basename $0`" "WN_Resource" "Invalid factory attribute value specified for CVMFS requirement."
+				exit 1
 			fi
 		fi
-	else
-		# if evaluation was false, then exit from this activity of mounting CVMFS
-		"$error_gen" -error "`basename $0`" "WN_Resource" "Worker node configuration did not pass the evaluation checks. CVMFS will not be mounted."
-		exit 1
-	fi	
+	fi
+else
+	# if evaluation was false, then exit from this activity of mounting CVMFS
+	"$error_gen" -error "`basename $0`" "WN_Resource" "Worker node configuration did not pass the evaluation checks. CVMFS will not be mounted."
+	exit 1
+fi	
 #else
 	# if operating system distribution is non-RHEL (any non-rhel OS)
 	# display operating system information and a user-friendly message	
@@ -136,7 +137,7 @@ else
 	# ----- Further Implementation: TBD (To Be Done) ----- #
 	#fi
 
-fi
+#fi
 
 #loginfo "End log for mounting CVMFS"
 

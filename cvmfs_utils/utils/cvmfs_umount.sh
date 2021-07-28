@@ -40,7 +40,6 @@ fi
 # get the glidein work directory location from glidein_config file
 work_dir=`grep '^GLIDEIN_WORK_DIR ' $glidein_config | awk '{print $2}'` 
 cvmfs_utils_dir=$work_dir/cvmfs_utils
-
 # $PWD=/tmp/glide_xxx and every path is referenced with respect to $PWD 
 # source the helper script
 source $cvmfs_utils_dir/utils/cvmfs_helper_funcs.sh
@@ -52,26 +51,32 @@ source $cvmfs_utils_dir/utils/cvmfs_helper_funcs.sh
 loginfo "..."
 loginfo  "Start log for unmounting CVMFS"
 
-# check if CVMFS has been mounted on the worker node
-df -h | grep /cvmfs &> /dev/null
+# check if CVMFS is locally mounted on the worker node
+#df -h | grep /cvmfs &> /dev/null
+detect_local_cvmfs
 
-if [[ $? -eq 0 ]]; then
-	# CVMFS mount points exist in the filesystem
+if [[ $GWMS_IS_CVMFS_MNT -eq 0 ]]; then
+	# CVMFS is mounted locally in the filesystem; DO NOT UNMOUNT!!
+	"$error_gen" -ok "`basename $0`" "msg" "CVMFS is locally mounted on the node; skipping cleanup."
+	exit 0
+else
 	loginfo "Unmounting CVMFS..."
 	$cvmfs_utils_dir/distros/.cvmfsexec/umountrepo -a
 	
 	# check again to ensure all CVMFS repositories were unmounted by umountrepo
-	df -h | grep /cvmfs &> /dev/null && logerror "One or more CVMFS repositories might not be completely unmounted" || loginfo "CVMFS repositories unmounted"
+	#df -h | grep /cvmfs &> /dev/null && logerror "One or more CVMFS repositories might not be completely unmounted" || loginfo "CVMFS repositories unmounted"
+	# searching for "/dev/fuse" since "/cvmfs" returns false positives (/etc/auto.fs /cvmfs line)
+	cat /proc/$$/mounts | grep /dev/fuse &> /dev/null && logerror "One or more CVMFS repositories might not be completely unmounted" || loginfo "CVMFS repositories unmounted"
 	
 	# returning 0 to indicate the unmount process was successful
-	true	
+	true
 
-else
+#else
 	# CVMFS mount points do not exist in the file system
-	loginfo "No CVMFS repositories found mounted. Exiting the script..."
+#	loginfo "No CVMFS repositories found mounted. Exiting the script..."
 	
 	# returning 1 to indicate that unmount process failed (i.e. nothing was unmounted as CVMFS was not previously mounted)
-	false
+#	false
 	
 fi
 
