@@ -26,7 +26,7 @@
 #exec &> $LOGFILE
 
 # fetch the error reporting helper script
-error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
+#error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
 #echo $error_gen
 
 variables_reset() {
@@ -92,7 +92,7 @@ logwarn(){
 logerror() {
 	# DESCRIPTION: This function prints error messages to STDOUT along with
 	# hostname and date/time.
-        #
+	#
         # INPUT(S): String containing the message
 	# RETURN(S): Prints message to STDOUT
 
@@ -110,6 +110,22 @@ check_exit_status () {
 	[[ $1 -eq 0 ]] && echo yes || echo no
 }
 
+detect_local_cvmfs() {
+	CVMFS_ROOT="/cvmfs"
+	repo_name=oasis.opensciencegrid.org
+	# Second check...
+	if [[ -f $CVMFS_ROOT/$repo_name/.cvmfsdirtab || "$(ls -A $CVMFS_ROOT/$repo_name)" ]] &>/dev/null
+	then
+		echo "Validating CVMFS: ${repo_name}... CVMFS is mounted!"
+		true
+	else
+		echo "Validating CVMFS: ${repo_name} directory is empty or does not have .cvmfsdirtab"
+		false
+	fi
+	
+	GWMS_IS_CVMFS_MNT=$?
+	loginfo "CVMFS locally installed: $(check_exit_status $GWMS_IS_CVMFS_MNT)"
+}
 
 perform_system_check() {
         # DESCRIPTION: This functions performs required system checks (such as
@@ -139,8 +155,10 @@ perform_system_check() {
 	GWMS_OS_KRNL_MINOR_REV=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 1 -d " " | awk -F'.' '{print $3}'`
 	GWMS_OS_KRNL_PATCH_NUM=`uname -r | awk -F'-' '{split($2,a,"."); print $1,a[1]}' | cut -f 2 -d " "`
 	
-	df -h | grep /cvmfs &>/dev/null
-	GWMS_IS_CVMFS_MNT=$?
+	#df -h | grep /cvmfs &>/dev/null
+	#GWMS_IS_CVMFS_MNT=$?
+	# call function to detect local CVMFS only if the GWMS_IS_CVMFS_MNT variable is not set; if the variable is not empty, do nothing
+	[[ -z "${GWMS_IS_CVMFS_MNT}" ]] && detect_local_cvmfs || :
 	
 	sysctl user.max_user_namespaces &>/dev/null
 	GWMS_IS_UNPRIV_USERNS_SUPPORTED=$?
@@ -194,7 +212,7 @@ log_all_system_info () {
 	loginfo "Kernel minor revision: $GWMS_OS_KRNL_MINOR_REV"
 	loginfo "Kernel patch number: $GWMS_OS_KRNL_PATCH_NUM"
 	
-	loginfo "CVMFS installed: $(check_exit_status $GWMS_IS_CVMFS_MNT)"
+	loginfo "CVMFS locally installed: $(check_exit_status $GWMS_IS_CVMFS_MNT)"
 	loginfo "Unprivileged user namespaces supported: $(check_exit_status $GWMS_IS_UNPRIV_USERNS_SUPPORTED)"
 	loginfo "Unprivileged user namespaces enabled: $(check_exit_status $GWMS_IS_UNPRIV_USERNS_ENABLED)"
 	loginfo "FUSE installed: $(check_exit_status $GWMS_IS_FUSE_INSTALLED)"
@@ -275,7 +293,7 @@ has_unpriv_userns() {
 	#	error) to stdout
 
 	# make sure that perform_system_check has run	
-	[[ -z "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
+	[[ -z "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check && detect_local_cvmfs
 
 	# determine whether unprivileged user namespaces are supported and/or enabled...
 	if [[ "${GWMS_IS_UNPRIV_USERNS_ENABLED}" -eq 0 ]]; then
@@ -320,7 +338,7 @@ has_fuse() {
         # RETURN(S): string denoting fuse availability (yes, no, error)
 
 	# make sure that perform_system_check has run
-	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
+	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check && detect_local_cvmfs
 	
 	#GWMS_IS_FUSERMOUNT=0
 	#res_is_fusermount=$(check_exit_status $GWMS_IS_FUSERMOUNT)
