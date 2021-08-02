@@ -19,12 +19,15 @@
 #
 
 
-
 # to implement custom logging
 # https://stackoverflow.com/questions/42403558/how-do-i-manage-log-verbosity-inside-a-shell-script
 # WORKAROUND: redirect stdout and stderr to some file 
 #LOGFILE="cvmfs_all.log"
 #exec &> $LOGFILE
+
+# fetch the error reporting helper script
+error_gen=`grep '^ERROR_GEN_PATH ' $glidein_config | awk '{print $2}'`
+#echo $error_gen
 
 variables_reset() {
 	# DESCRIPTION: This function lists and initializes the common variables
@@ -217,14 +220,15 @@ mount_cvmfs_repos () {
 	#	echo "executing inside"
 	#fi
 	
-	$cvmfs_utils_dir/mycvmfsexec $1 -- echo "setting up mount utilities..." &> /dev/null
+	#$cvmfs_utils_dir/mycvmfsexec $1 -- echo "setting up mount utilities..." &> /dev/null
+	$cvmfs_utils_dir/distros/$dist_file $1 -- echo "setting up mount utilities..." &> /dev/null
 	if [[ $(df -h|grep /cvmfs|wc -l) -eq 1 ]]; then
 		loginfo "CVMFS config repo already mounted!"
 		continue
 	else
 		# mounting the configuration repo (pre-requisite)
 		loginfo "Mounting CVMFS config repo now..."
-		$cvmfs_utils_dir/.cvmfsexec/mountrepo $1
+		$cvmfs_utils_dir/distros/.cvmfsexec/mountrepo $1
 		#.cvmfsexec/mountrepo $1
 	fi
 	
@@ -238,7 +242,7 @@ mount_cvmfs_repos () {
 	# mount every repository that was previously unpacked
 	for repo in "${repos[@]}"
 	do
-		$cvmfs_utils_dir/.cvmfsexec/mountrepo $repo
+		$cvmfs_utils_dir/distros/.cvmfsexec/mountrepo $repo
 	#	.cvmfsexec/mountrepo $repo
 	done
 
@@ -246,6 +250,7 @@ mount_cvmfs_repos () {
 	num_repos_mntd=`df -h | grep /cvmfs | wc -l`
 	total_num_repos=$(( ${#repos[@]} + 1 ))
 	if [ "$num_repos_mntd" -eq "$total_num_repos" ]; then
+	#if [ "$num_repos_mntd" -eq 2 ]; then
 		loginfo "All CVMFS repositories mounted successfully on the worker node"
 		true
 	else
@@ -253,7 +258,7 @@ mount_cvmfs_repos () {
 		false
 	fi
 	
-	GWMS_IS_CVMFS=$?
+	#GWMS_IS_CVMFS=$?
 	#echo $GWMS_IS_CVMFS
 }
 
@@ -326,6 +331,7 @@ has_fuse() {
 	
 	# exit from the script if unprivileged namespaces are not supported but enabled in the kernel
 	if [[ "${unpriv_userns_config}" == error ]]; then
+		"$error_gen" -error "`basename $0`" "WN_Resource" "Unprivileged user namespaces are not supported but enabled in the kernel! Check system configuration."
 		exit 1
 	# determine if mountrepo/umountrepo could be used by checking availability of fuse, fusermount and user being in fuse group...
 	elif [[ "${GWMS_IS_FUSE_INSTALLED}" -eq 0 ]]; then
