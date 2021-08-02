@@ -50,7 +50,7 @@ variables_reset() {
 	GWMS_OS_KRNL_MINOR_REV=
 	GWMS_OS_KRNL_PATCH_NUM=
 	
-	# indicates whether CVMFS is already mounted
+	# indicates whether CVMFS is locally mounted on the node
 	GWMS_IS_CVMFS_MNT=
 	# to indicate the status of mounting CVMFS by the glidein after evaluating the worker node
 	GWMS_IS_CVMFS=
@@ -116,10 +116,10 @@ detect_local_cvmfs() {
 	# Second check...
 	if [[ -f $CVMFS_ROOT/$repo_name/.cvmfsdirtab || "$(ls -A $CVMFS_ROOT/$repo_name)" ]] &>/dev/null
 	then
-		echo "Validating CVMFS: ${repo_name}... CVMFS is mounted!"
+		loginfo "Validating CVMFS with ${repo_name}..."
 		true
 	else
-		echo "Validating CVMFS: ${repo_name} directory is empty or does not have .cvmfsdirtab"
+		logwarn "Validating CVMFS with ${repo_name}: directory empty or does not have .cvmfsdirtab"
 		false
 	fi
 	
@@ -276,8 +276,7 @@ mount_cvmfs_repos () {
 		false
 	fi
 	
-	#GWMS_IS_CVMFS=$?
-	#echo $GWMS_IS_CVMFS
+	GWMS_IS_CVMFS=$?
 }
 
 
@@ -293,7 +292,7 @@ has_unpriv_userns() {
 	#	error) to stdout
 
 	# make sure that perform_system_check has run	
-	[[ -z "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check && detect_local_cvmfs
+	[[ -z "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
 
 	# determine whether unprivileged user namespaces are supported and/or enabled...
 	if [[ "${GWMS_IS_UNPRIV_USERNS_ENABLED}" -eq 0 ]]; then
@@ -338,7 +337,7 @@ has_fuse() {
         # RETURN(S): string denoting fuse availability (yes, no, error)
 
 	# make sure that perform_system_check has run
-	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check && detect_local_cvmfs
+	[[ -n "${GWMS_SYSTEM_CHECK}" ]] && perform_system_check
 	
 	#GWMS_IS_FUSERMOUNT=0
 	#res_is_fusermount=$(check_exit_status $GWMS_IS_FUSERMOUNT)
